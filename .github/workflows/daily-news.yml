@@ -1,0 +1,42 @@
+name: Daily AI News Digest
+
+on:
+  schedule:
+    # 22:25 UTC = 06:25 CST (UTC+8)
+    - cron: '25 22 * * *'
+  workflow_dispatch: # 支持手动触发测试
+
+jobs:
+  fetch-and-summarize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Claude Code - AI News Digest
+        env:
+          # GLM Coding Plan 配置
+          ANTHROPIC_BASE_URL: https://open.bigmodel.cn/api/anthropic
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.GLM_API_KEY }}
+          ANTHROPIC_MODEL: glm-5.1
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: glm-5
+          ANTHROPIC_DEFAULT_SONNET_MODEL: glm-5
+          ANTHROPIC_DEFAULT_OPUS_MODEL: glm-5
+          # Telegram 推送配置
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          claude -p "$(cat prompt.md)" \
+            --allowedTools "Bash" \
+            --dangerously-skip-permissions \
+            --max-turns 30 \
+            --no-session-persistence
