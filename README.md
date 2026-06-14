@@ -1,6 +1,6 @@
 # AI News Bot - GitHub Actions + GLM Coding Plan
 
-每天早上 6:25 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后推送到 Telegram。
+每天早上 5:30 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后推送到 Telegram。
 
 电脑关机也能跑，完全免费。
 
