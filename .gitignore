@@ -1,0 +1,10 @@
+# Ignore local configuration files (contain sensitive data)
+config.local.ps1
+
+# Ignore log files
+*.log
+scheduled-*.txt
+
+# Ignore temporary files
+*.txt.tmp
+ai-news-prompt-*.txt
