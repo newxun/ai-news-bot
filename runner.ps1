@@ -102,32 +102,54 @@ $prompt = $basePrompt
 $promptLength = $prompt.Length
 Write-Log "Prompt length: $promptLength chars" "INFO"
 
-# Invoke Claude Code
+# Invoke Claude Code with retry
 Write-Log "Invoking Claude Code..." "INFO"
 
-try {
-    # Pass prompt directly as argument — piping to claude.ps1 does NOT forward stdin to claude.exe
-    # --dangerously-skip-permissions: -p mode cannot prompt for WebSearch/Write approval, so bypass is required for automation
-    $output = & $claudePath --dangerously-skip-permissions -p $prompt 2>&1
-    $exitCode = $LASTEXITCODE
+$retryDelays = @(1, 2, 3, 5)  # minutes: 1, 2, 3, 5
+$attempt = 0
+$success = $false
+$output = $null
+$exitCode = -1
 
-    Write-Log "Claude exit code: $exitCode" "INFO"
+foreach ($delayMinutes in $retryDelays) {
+    $attempt++
+    Write-Log "Attempt $attempt of $($retryDelays.Count)..." "INFO"
 
-    if ($exitCode -eq 0) {
-        Write-Log "Claude executed successfully" "INFO"
-    } else {
-        Write-Log "Claude exited with code: $exitCode" "WARN"
+    try {
+        # Pass prompt directly as argument — piping to claude.ps1 does NOT forward stdin to claude.exe
+        # --dangerously-skip-permissions: -p mode cannot prompt for WebSearch/Write approval, so bypass is required for automation
+        $output = & $claudePath --dangerously-skip-permissions -p $prompt 2>&1
+        $exitCode = $LASTEXITCODE
+
+        Write-Log "Claude exit code: $exitCode" "INFO"
+
+        if ($exitCode -eq 0) {
+            Write-Log "Claude executed successfully" "INFO"
+            $success = $true
+            break
+        } else {
+            Write-Log "Claude exited with code: $exitCode" "WARN"
+        }
+
+        $outputLines = $output -split "`n"
+        if ($outputLines.Count -gt 50) {
+            $output = ($outputLines | Select-Object -Last 50) -join "`n"
+        }
+        Add-Content -Path $logFile -Value "--- Claude Output (last 50 lines) ---" -Encoding UTF8
+        $output | Out-File -FilePath $logFile -Append -Encoding UTF8
+    } catch {
+        Write-Log "Claude invocation failed: $_" "ERROR"
     }
 
-    $outputLines = $output -split "`n"
-    if ($outputLines.Count -gt 50) {
-        $output = ($outputLines | Select-Object -Last 50) -join "`n"
+    if (-not $success -and $attempt -lt $retryDelays.Count) {
+        $nextDelay = $retryDelays[$attempt]
+        Write-Log "Retrying in $nextDelay minute(s)..." "INFO"
+        Start-Sleep -Seconds ($nextDelay * 60)
     }
-    Add-Content -Path $logFile -Value "--- Claude Output (last 50 lines) ---" -Encoding UTF8
-    $output | Out-File -FilePath $logFile -Append -Encoding UTF8
-} catch {
-    Write-Log "Claude invocation failed: $_" "ERROR"
-    Write-Log "=== Runner failed ===" "ERROR"
+}
+
+if (-not $success) {
+    Write-Log "=== Runner failed after $attempt attempts ===" "ERROR"
     exit 1
 }
 
