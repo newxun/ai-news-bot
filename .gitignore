@@ -8,3 +8,12 @@ scheduled-*.txt
 # Ignore temporary files
 *.txt.tmp
 ai-news-prompt-*.txt
+
+# Node modules
+node_modules/
+
+# Claude local
+.claude/
+
+# Environment files
+.env
