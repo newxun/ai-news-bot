@@ -1,5 +1,6 @@
 # Ignore local configuration files (contain sensitive data)
 config.local.ps1
+scripts/config.local.ps1
 
 # Ignore log files
 *.log

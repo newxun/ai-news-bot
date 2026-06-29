@@ -18,19 +18,19 @@
 
 ### 文件说明
 
-- **scheduler.ps1** - 核心调度器，查询 GitHub Actions 并注册一次性任务
-- **runner.ps1** - 执行器，调用 Claude Code 进行新闻搜索
-- **register-task.ps1** - 在 Windows 任务计划程序中注册每日任务
-- **view-logs.ps1** - 日志查看工具，显示执行状态摘要
-- **config.ps1** - 配置文件模板
-- **config.local.ps1** - 本地配置文件（需要自行创建，不要提交到版本控制）
+- **scripts/scheduler.ps1** - 核心调度器，查询 GitHub Actions 并注册一次性任务
+- **scripts/runner.ps1** - 执行器，调用 Claude Code 进行新闻搜索
+- **scripts/register-task.ps1** - 在 Windows 任务计划程序中注册每日任务
+- **scripts/view-logs.ps1** - 日志查看工具，显示执行状态摘要
+- **scripts/config.ps1** - 配置文件模板
+- **scripts/config.local.ps1** - 本地配置文件（需要自行创建，不要提交到版本控制）
 
 ### 安装步骤
 
-1. 创建配置文件：`cp config.ps1 config.local.ps1`
+1. 创建配置文件：`cp scripts/config.ps1 scripts/config.local.ps1`
 2. 创建 GitHub Token：访问 https://github.com/settings/tokens
-3. 编辑 `config.local.ps1`，设置你的 GitHub token
-4. 以管理员身份运行：`.\register-task.ps1`
+3. 编辑 `scripts/config.local.ps1`，设置你的 GitHub token
+4. 以管理员身份运行：`.\scripts\register-task.ps1`
 
 ### 日志文件
 
