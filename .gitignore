@@ -18,3 +18,7 @@ node_modules/
 
 # Environment files
 .env
+
+# Generated output and logs (project-local)
+output/
+logs/

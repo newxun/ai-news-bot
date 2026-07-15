@@ -8,6 +8,7 @@ $env:PYTHONUTF8 = "1"
 
 # Load configuration
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
 $configPath = Join-Path $scriptDir "config.local.ps1"
 $templatePath = Join-Path $scriptDir "config.ps1"
 
@@ -22,12 +23,19 @@ if (Test-Path $configPath) {
     exit 1
 }
 
+# Resolve output directory: relative paths are anchored to the project root
+$outputDir = if ([System.IO.Path]::IsPathRooted($config.OutputDir)) {
+    $config.OutputDir
+} else {
+    Join-Path $projectRoot $config.OutputDir
+}
+
 $beijingTz = [System.TimeZoneInfo]::FindSystemTimeZoneById($config.TimezoneId)
 $nowBeijing = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $beijingTz)
 $today = $nowBeijing.ToString("yyyy-MM-dd")
 $nowTime = $nowBeijing.ToString("HH:mm")
 
-$logDir = Join-Path $env:USERPROFILE ".ai-news-scheduler"
+$logDir = Join-Path $projectRoot "logs"
 $logFile = Join-Path $logDir "runner-$today.log"
 
 if (-not (Test-Path $logDir)) {
@@ -45,9 +53,9 @@ Write-Log "=== Runner started ===" "INFO"
 Write-Log "Today: $today  Time: $nowTime" "INFO"
 
 # Create output directory if not exists
-if (-not (Test-Path $config.OutputDir)) {
+if (-not (Test-Path $outputDir)) {
     try {
-        New-Item -ItemType Directory -Path $config.OutputDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
         Write-Log "Created output directory" "INFO"
     } catch {
         Write-Log "Failed to create output directory: $_" "ERROR"
@@ -55,7 +63,7 @@ if (-not (Test-Path $config.OutputDir)) {
     }
 }
 
-$outputFile = Join-Path $config.OutputDir "AI新闻_$today.md"
+$outputFile = Join-Path $outputDir "AI小知识_$today.md"
 
 # Idempotency check
 if (Test-Path $outputFile) {
@@ -94,9 +102,20 @@ if (-not $claudePath) {
 
 Write-Log "Using claude: $claudePath" "INFO"
 
-# Build search prompt
-$outputPath = $config.OutputDir.Replace('\', '/')
-$basePrompt = "今日是 $today（北京时间）。请搜索过去24小时内最大的1-2条AI新闻，然后保存结果到 $outputPath/AI新闻_$today.md"
+# Build prompt
+$outputPath = $outputDir.Replace('\', '/')
+$basePrompt = @"
+今日是 $today。请随机挑选一个有趣、准确、不太为人知的 AI（人工智能 / 机器学习 / 深度学习 / 大语言模型）小知识，用中英双语讲解。
+
+要求：
+- 只写一条知识
+- 先写中文部分（100~200 字），通俗易懂，最好配一个具体例子或有趣的冷知识
+- 再写对应的英文部分（English version），内容一致、简洁地道
+- 标题用「## Daily AI Knowledge / 每日 AI 小知识」
+- 结构：标题 → 中文段 → 英文段
+
+保存到：$outputPath/AI小知识_$today.md
+"@
 $prompt = $basePrompt
 
 $promptLength = $prompt.Length
@@ -162,7 +181,7 @@ if (Test-Path $outputFile) {
     Write-Log "Path: $outputFile" "INFO"
     Write-Log "Size: $size bytes" "INFO"
 
-    if ($content -match "AI 新闻摘要" -or $content -match "## 今日最大 AI 新闻") {
+    if ($content -match "AI 小知识") {
         Write-Log "Content validation: PASSED" "INFO"
         Write-Log "=== Runner completed (SUCCESS) ===" "INFO"
         exit 0

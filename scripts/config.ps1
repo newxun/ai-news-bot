@@ -12,7 +12,7 @@ $Global:AiNewsConfig = @{
     Repo = "newxun/ai-news-bot"
 
     # Output directory for AI news files
-    OutputDir = "D:\存档\AI新闻"
+    OutputDir = "output"
 
     # Timezone for display and scheduling
     # Use Windows timezone ID (e.g., "China Standard Time", "Pacific Standard Time")
