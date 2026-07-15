@@ -118,7 +118,8 @@ foreach ($delayMinutes in $retryDelays) {
     try {
         # Pass prompt directly as argument — piping to claude.ps1 does NOT forward stdin to claude.exe
         # --dangerously-skip-permissions: -p mode cannot prompt for WebSearch/Write approval, so bypass is required for automation
-        $output = & $claudePath --dangerously-skip-permissions -p $prompt 2>&1
+        # --model: specify which model to use (glm-4.7 in this case)
+        $output = & $claudePath --model glm-4.7 --dangerously-skip-permissions -p $prompt 2>&1
         $exitCode = $LASTEXITCODE
 
         Write-Log "Claude exit code: $exitCode" "INFO"
