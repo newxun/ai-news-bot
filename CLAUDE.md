@@ -1,6 +1,6 @@
 # AI News Bot
 
-本项目使用 Claude Code + GLM Coding Plan 在 GitHub Actions 上定时运行，每天早上 6:25 (CST) 自动收集并汇总过去 24 小时的 AI 新闻，推送到 Telegram。
+本项目使用 Claude Code + GLM Coding Plan 在 GitHub Actions 上定时运行，每天早上 6:00 (CST) 自动收集并汇总过去 24 小时的 AI 新闻，推送到 Telegram。
 
 ## 环境变量
 
