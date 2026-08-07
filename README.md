@@ -43,9 +43,9 @@
 
 ## AI News Bot (GitHub Actions)
 
-每天早上 6:00 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后推送到 Telegram。
-
-模型只负责抓取与写摘要到 `output/digest.txt`；Telegram 发送由 workflow 独立步骤完成，避免推送渠道相关指令进入模型输入触发内容审核。
+每天早上 6:00 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan / glm-4.7) 汇总后：
+- 写入并提交到仓库 `digests/YYYY-MM-DD.md`（可直接在 GitHub 浏览）
+- 由 workflow 独立步骤推送到 Telegram（避免推送渠道指令进入模型输入触发内容审核）
 
 ### 快速部署
 
