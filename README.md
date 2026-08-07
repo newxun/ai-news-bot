@@ -45,6 +45,8 @@
 
 每天早上 6:00 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后推送到 Telegram。
 
+模型只负责抓取与写摘要到 `output/digest.txt`；Telegram 发送由 workflow 独立步骤完成，避免推送渠道相关指令进入模型输入触发内容审核。
+
 ### 快速部署
 
 1. 在 GitHub 上创建一个 PRIVATE 仓库

@@ -24,19 +24,106 @@ jobs:
 
       - name: Run Claude Code - AI News Digest
         env:
-          # GLM Coding Plan 配置
+          # GLM Coding Plan 配置（不向模型暴露推送渠道相关环境变量）
           ANTHROPIC_BASE_URL: https://open.bigmodel.cn/api/anthropic
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.GLM_API_KEY }}
           ANTHROPIC_MODEL: glm-5.1
           ANTHROPIC_DEFAULT_HAIKU_MODEL: glm-5
           ANTHROPIC_DEFAULT_SONNET_MODEL: glm-5
           ANTHROPIC_DEFAULT_OPUS_MODEL: glm-5
-          # Telegram 推送配置
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           claude -p "$(cat prompt.md)" \
             --allowedTools "Bash" \
             --dangerously-skip-permissions \
             --max-turns 30 \
             --no-session-persistence
+
+      - name: Verify digest file
+        id: digest
+        run: |
+          if [ ! -s output/digest.txt ]; then
+            echo "::error::output/digest.txt 不存在或为空，摘要生成失败"
+            exit 1
+          fi
+          echo "digest_bytes=$(wc -c < output/digest.txt)" >> "$GITHUB_OUTPUT"
+          echo "摘要文件大小: $(wc -c < output/digest.txt) bytes"
+          head -n 8 output/digest.txt
+
+      - name: Send digest to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 << 'PY'
+          import json, os, urllib.request
+
+          token = os.environ["TELEGRAM_BOT_TOKEN"]
+          chat_id = os.environ["TELEGRAM_CHAT_ID"]
+          text = open("output/digest.txt", encoding="utf-8").read().strip()
+          if len(text) > 4000:
+              text = text[:3990] + "..."
+
+          payload = json.dumps({
+              "chat_id": chat_id,
+              "text": text,
+              "disable_web_page_preview": True,
+          }).encode("utf-8")
+
+          req = urllib.request.Request(
+              f"https://api.telegram.org/bot{token}/sendMessage",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              body = json.loads(resp.read().decode("utf-8"))
+
+          if not body.get("ok"):
+              raise SystemExit(f"Telegram 发送失败: {body}")
+          print(f"发送成功，message_id={body['result']['message_id']}")
+          PY
+
+      - name: Notify failure on Telegram
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 << 'PY'
+          import json, os, urllib.request
+
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+          if not token or not chat_id:
+              print("缺少 Telegram secrets，跳过失败通知")
+              raise SystemExit(0)
+
+          run_url = (
+              f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/"
+              f"{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/"
+              f"{os.environ.get('GITHUB_RUN_ID', '')}"
+          )
+          text = (
+              "⚠️ AI 日报任务失败\n"
+              f"仓库: {os.environ.get('GITHUB_REPOSITORY', '')}\n"
+              f"Run: {run_url}\n"
+              "请检查 GitHub Actions 日志。"
+          )
+          payload = json.dumps({
+              "chat_id": chat_id,
+              "text": text,
+              "disable_web_page_preview": True,
+          }).encode("utf-8")
+          req = urllib.request.Request(
+              f"https://api.telegram.org/bot{token}/sendMessage",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  body = json.loads(resp.read().decode("utf-8"))
+              print("失败通知已发送" if body.get("ok") else body)
+          except Exception as e:
+              print(f"失败通知发送异常（忽略）: {e}")
+          PY
