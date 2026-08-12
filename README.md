@@ -32,27 +32,33 @@
 3. 编辑 `scripts/config.local.ps1`，设置你的 GitHub token
 4. 以管理员身份运行：`.\scripts\register-task.ps1`
 
+### 时间计算说明
+
+**重要**：系统使用任务完成时间（而非开始时间）来计算日期。这意味着：
+
+- 文件名中的日期基于 Claude Code 执行完成时的北京时间
+- 如果任务在跨午夜时完成，文件名会反映实际的完成日期
+- 日志文件同样使用完成时间命名
+
 ### 日志文件
 
 日志保存在 `~\.ai-news-scheduler\` 目录：
 - `scheduler-YYYY-MM-DD.log` - 调度器日志
-- `runner-YYYY-MM-DD.log` - 执行器日志
+- `runner-YYYY-MM-DD.log` - 执行器日志（使用完成时间命名）
 - `scheduled-YYYY-MM-DD.txt` - 调度标记文件
 
 ---
 
 ## AI News Bot (GitHub Actions)
 
-每天早上 6:00 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan / glm-4.7) 汇总后：
-- 写入并提交到仓库 `digests/YYYY-MM-DD.md`（可直接在 GitHub 浏览）
-- 由 workflow 独立步骤推送到 Telegram（避免推送渠道指令进入模型输入触发内容审核）
+每天早上 6:30 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后推送到 Telegram。
 
 ### 快速部署
 
 1. 在 GitHub 上创建一个 PRIVATE 仓库
 2. 配置 GitHub Secrets（GLM_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID）
 3. 测试运行：在 Actions 页面手动触发 workflow
-4. 确认定时触发：cron `0 22 * * *` (UTC)，对应北京时间 06:00
+4. 确认定时触发：cron `30 22 * * *` (UTC)，对应北京时间 06:30
 
 ### 自定义
 
