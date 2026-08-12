@@ -1,4 +1,4 @@
-﻿# AI News Runner - One-shot execution
+# AI News Runner - One-shot execution
 $ErrorActionPreference = "Continue"
 
 # Force UTF-8 for capturing Claude CLI output — otherwise Chinese text from stderr comes out as mojibake
@@ -30,17 +30,14 @@ $outputDir = if ([System.IO.Path]::IsPathRooted($config.OutputDir)) {
     Join-Path $projectRoot $config.OutputDir
 }
 
-$beijingTz = [System.TimeZoneInfo]::FindSystemTimeZoneById($config.TimezoneId)
-$nowBeijing = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $beijingTz)
-$today = $nowBeijing.ToString("yyyy-MM-dd")
-$nowTime = $nowBeijing.ToString("HH:mm")
-
 $logDir = Join-Path $projectRoot "logs"
-$logFile = Join-Path $logDir "runner-$today.log"
 
 if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }
+
+# Use a temporary log file initially
+$logFile = Join-Path $logDir "runner-temp.log"
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -50,7 +47,6 @@ function Write-Log {
 }
 
 Write-Log "=== Runner started ===" "INFO"
-Write-Log "Today: $today  Time: $nowTime" "INFO"
 
 # Create output directory if not exists
 if (-not (Test-Path $outputDir)) {
@@ -63,14 +59,8 @@ if (-not (Test-Path $outputDir)) {
     }
 }
 
-$outputFile = Join-Path $outputDir "AI小知识_$today.md"
-
-# Idempotency check
-if (Test-Path $outputFile) {
-    Write-Log "Output file already exists, skipping" "INFO"
-    Write-Log "=== Runner completed (SKIPPED) ===" "INFO"
-    exit 0
-}
+# Idempotency check - but we need to know the date first, so skip for now
+# The check will be done after we calculate the date at the end
 
 # Locate Claude Code CLI
 $claudePath = $null
@@ -102,10 +92,10 @@ if (-not $claudePath) {
 
 Write-Log "Using claude: $claudePath" "INFO"
 
-# Build prompt
+# Build prompt (date will be inserted at completion time)
 $outputPath = $outputDir.Replace('\', '/')
 $basePrompt = @"
-今日是 $today。请随机挑选一个有趣、准确、不太为人知的 AI（人工智能 / 机器学习 / 深度学习 / 大语言模型）小知识，用中英双语讲解。
+请随机挑选一个有趣、准确、不太为人知的 AI（人工智能 / 机器学习 / 深度学习 / 大语言模型）小知识，用中英双语讲解。
 
 要求：
 - 只写一条知识
@@ -114,7 +104,7 @@ $basePrompt = @"
 - 标题用「## Daily AI Knowledge / 每日 AI 小知识」
 - 结构：标题 → 中文段 → 英文段
 
-保存到：$outputPath/AI小知识_$today.md
+保存到：$outputPath/AI小知识_{{DATE}}.md
 "@
 $prompt = $basePrompt
 
@@ -171,6 +161,39 @@ foreach ($delayMinutes in $retryDelays) {
 if (-not $success) {
     Write-Log "=== Runner failed after $attempt attempts ===" "ERROR"
     exit 1
+}
+
+# Calculate completion time (after Claude finishes)
+$beijingTz = [System.TimeZoneInfo]::FindSystemTimeZoneById($config.TimezoneId)
+$nowBeijing = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $beijingTz)
+$today = $nowBeijing.ToString("yyyy-MM-dd")
+$nowTime = $nowBeijing.ToString("HH:mm")
+
+Write-Log "Completion time: $today $nowTime (Beijing)" "INFO"
+
+# Rename log file with actual date
+$finalLogFile = Join-Path $logDir "runner-$today.log"
+if (Test-Path $logFile) {
+    Move-Item -Path $logFile -Destination $finalLogFile -Force
+    $logFile = $finalLogFile
+    Write-Log "Log file renamed to: runner-$today.log" "INFO"
+}
+
+# Set final output file path (replace placeholder with actual date)
+$outputFile = Join-Path $outputDir "AI小知识_$today.md"
+
+# Find and move the generated file if it was created with placeholder name
+$placeholderFile = Join-Path $outputDir "AI小知识_{{DATE}}.md"
+if (Test-Path $placeholderFile) {
+    Move-Item -Path $placeholderFile -Destination $outputFile -Force
+    Write-Log "Renamed output file from placeholder to actual date" "INFO"
+}
+
+# Check for idempotency
+if (Test-Path $outputFile) {
+    Write-Log "Output file already exists, skipping" "INFO"
+    Write-Log "=== Runner completed (SKIPPED) ===" "INFO"
+    exit 0
 }
 
 # Verify output
