@@ -2,8 +2,8 @@ name: Daily AI News Digest
 
 on:
   schedule:
-    # 22:30 UTC = 06:30 CST (UTC+8)
-    - cron: '30 22 * * *'
+    # 22:37 UTC = 06:37 CST (UTC+8), 避开半点调度高峰防止被drop
+    - cron: '37 22 * * *'
   workflow_dispatch: # 支持手动触发测试
 
 jobs:
