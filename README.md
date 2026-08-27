@@ -51,14 +51,14 @@
 
 ## AI News Bot (GitHub Actions)
 
-每天早上 6:30 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后推送到 Telegram。
+每天早上 6:37 自动收集 AI 新闻，通过 Claude Code (GLM Coding Plan) 汇总后归档到仓库 `digests/` 目录。
 
 ### 快速部署
 
 1. 在 GitHub 上创建一个 PRIVATE 仓库
-2. 配置 GitHub Secrets（GLM_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID）
+2. 配置 GitHub Secrets（GLM_API_KEY）
 3. 测试运行：在 Actions 页面手动触发 workflow
-4. 确认定时触发：cron `30 22 * * *` (UTC)，对应北京时间 06:30
+4. 确认定时触发：cron `37 22 * * *` (UTC)，对应北京时间 06:37
 
 ### 自定义
 
