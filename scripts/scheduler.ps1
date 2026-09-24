@@ -1,4 +1,4 @@
-# AI News Scheduler - Daily trigger
+﻿# AI News Scheduler - Daily trigger
 # Runs at 10:00 AM (or whenever missed) via Windows Task Scheduler
 # Mirrors the Claude Code cron logic:
 #   1. Query GitHub Actions for latest workflow run completion time

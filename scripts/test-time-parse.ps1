@@ -1,4 +1,4 @@
-# Test time parsing and timezone conversion
+﻿# Test time parsing and timezone conversion
 
 $rawTime = "2026-06-16T22:59:32Z"
 

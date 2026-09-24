@@ -1,4 +1,4 @@
-# Register the daily AINewsScheduler task in Windows Task Scheduler
+﻿# Register the daily AINewsScheduler task in Windows Task Scheduler
 # Runs daily at 10:00 AM Beijing time. No admin required.
 
 $ErrorActionPreference = "Stop"

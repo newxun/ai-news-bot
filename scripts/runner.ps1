@@ -1,4 +1,4 @@
-# AI News Runner - One-shot execution
+﻿# AI News Runner - One-shot execution
 $ErrorActionPreference = "Continue"
 
 # Force UTF-8 for capturing Claude CLI output — otherwise Chinese text from stderr comes out as mojibake
